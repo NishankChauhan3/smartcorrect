@@ -115,6 +115,7 @@ router.post('/update', authMiddleware, async (req, res) => {
             user.analytics.improvementHistory = history;
         }
 
+        user.markModified('analytics');
         await user.save();
         res.json(user.analytics);
     } catch (err) {
