@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0F172A;
+  --color-card: #111827;
+  --color-sidebar: #1E293B;
+  --color-accentBlue: #38BDF8;
+  --color-accentPurple: #8B5CF6;
+  --color-success: #22C55E;
+  --color-error: #F43F5E;
+}
+
+body {
+  background-color: var(--color-background);
+  color: white;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: rgba(139, 92, 246, 0.3);
+}
+
+.ProseMirror {
+  outline: none;
+  min-height: 300px;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #64748b;
+  pointer-events: none;
+  height: 0;
+}
