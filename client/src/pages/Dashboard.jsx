@@ -6,7 +6,7 @@ import io from 'socket.io-client';
 import { LayoutDashboard, FileText, BarChart3, LogOut, Loader2, Check, X, RefreshCw, MessageSquare, Sparkles, Smile, Frown, Meh, TrendingUp, Download, Copy } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const socket = io('http://localhost:5000');
+const socket = io('https://smartcorrect-backend-8el6.onrender.com');
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const Dashboard = () => {
   const updateAnalytics = async (payload) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/analytics/update', {
+      const response = await fetch('https://smartcorrect-backend-8el6.onrender.com/api/analytics/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
@@ -60,7 +60,7 @@ const Dashboard = () => {
 
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/analytics', {
+        const response = await fetch('https://smartcorrect-backend-8el6.onrender.com/api/analytics', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if(response.ok) {
