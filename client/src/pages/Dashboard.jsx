@@ -384,8 +384,6 @@ const Dashboard = () => {
                   <button onClick={() => handleAnalyze('academic')} className="px-3 py-1 bg-yellow-500/10 text-yellow-500 rounded-md text-xs font-medium border border-yellow-500/20 hover:bg-yellow-500/20 transition-colors">Academic</button>
                 </div>
               </div>
-
-              </div>
             </aside>
           </div>
         )}
