@@ -305,34 +305,6 @@ const Dashboard = () => {
               </header>
               <div className="flex-1 overflow-y-auto p-8 lg:px-24">
                 <EditorContent editor={editor} />
-                
-                {/* AI Suggestions Below Editor */}
-                {suggestions.length > 0 && (
-                  <div className="mt-12 border-t border-slate-800 pt-8 pb-12">
-                    <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                      <Sparkles className="text-accentBlue" size={20} /> 
-                      Review AI Suggestions
-                    </h3>
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      {suggestions.map((sugg) => (
-                        <div key={sugg.id} className="bg-slate-800/30 border border-slate-700 hover:border-slate-600 rounded-xl p-5 flex flex-col transition-colors shadow-sm">
-                          <div className="flex justify-between items-start mb-3">
-                            <span className="text-xs font-bold uppercase tracking-wider text-accentBlue px-2 py-1 bg-accentBlue/10 rounded">{sugg.type}</span>
-                          </div>
-                          <div className="mb-4 flex-1">
-                            <p className="line-through text-slate-500 text-sm mb-2">{sugg.original}</p>
-                            <p className="text-white text-lg font-medium">{sugg.suggestion}</p>
-                          </div>
-                          <p className="text-sm text-slate-400 mb-5">{sugg.message}</p>
-                          <div className="flex gap-3 mt-auto">
-                            <button onClick={() => acceptSuggestion(sugg.id, sugg.original, sugg.suggestion, sugg.type)} className="flex-1 bg-success/20 text-success hover:bg-success/30 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors"><Check size={16} /> Accept</button>
-                            <button onClick={() => ignoreSuggestion(sugg.id)} className="flex-1 bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors"><X size={16} /> Ignore</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
               <footer className="h-12 border-t border-slate-800 px-6 flex items-center text-sm text-slate-500">
                 {stats.words} words • {stats.characters} characters
@@ -385,6 +357,31 @@ const Dashboard = () => {
                   <button onClick={() => handleAnalyze('friendly')} className="px-3 py-1 bg-success/10 text-success rounded-md text-xs font-medium border border-success/20 hover:bg-success/20 transition-colors">Friendly</button>
                   <button onClick={() => handleAnalyze('academic')} className="px-3 py-1 bg-yellow-500/10 text-yellow-500 rounded-md text-xs font-medium border border-yellow-500/20 hover:bg-yellow-500/20 transition-colors">Academic</button>
                 </div>
+              </div>
+
+              {/* Suggestions List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {suggestions.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500 flex flex-col items-center">
+                    <MessageSquare size={32} className="mb-3 opacity-20" />
+                    <p className="text-sm">No suggestions yet.<br/>Click Analyze to review.</p>
+                  </div>
+                ) : (
+                  suggestions.map((sugg) => (
+                    <div key={sugg.id} className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+                      <div className="flex justify-between items-start mb-2"><span className="text-xs font-bold uppercase tracking-wider text-error">{sugg.type}</span></div>
+                      <div className="mb-3">
+                        <p className="line-through text-slate-500 text-sm">{sugg.original}</p>
+                        <p className="text-accentBlue font-medium">{sugg.suggestion}</p>
+                      </div>
+                      <p className="text-xs text-slate-400 mb-4">{sugg.message}</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => acceptSuggestion(sugg.id, sugg.original, sugg.suggestion, sugg.type)} className="flex-1 bg-success/20 text-success hover:bg-success/30 py-1.5 rounded-md text-xs font-semibold flex items-center justify-center gap-1"><Check size={14} /> Accept</button>
+                        <button onClick={() => ignoreSuggestion(sugg.id)} className="flex-1 bg-slate-700 text-slate-300 hover:bg-slate-600 py-1.5 rounded-md text-xs font-semibold flex items-center justify-center gap-1"><X size={14} /> Ignore</button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </aside>
           </div>
