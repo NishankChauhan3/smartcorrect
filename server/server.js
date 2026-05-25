@@ -145,90 +145,88 @@ io.on('connection', (socket) => {
 
             if (!usedAI) {
                 // FALLBACK LOGIC
-                setTimeout(async () => {
-                    if (data.mode === 'grammar') {
-                        try {
-                            let textToProcess = data.text;
-                            
-                            const rules = [
-                                { regex: /\b(he|she|it)\s+are\b/gi, fix: (m, p1) => `${p1} is` },
-                                { regex: /\b(this\s+[a-z]+)\s+are\b/gi, fix: (m, p1) => `${p1} is` },
-                                { regex: /\b(we|they)\s+was\b/gi, fix: (m, p1) => `${p1} were` },
-                                { regex: /\b(i)\s+is\b/gi, fix: (m, p1) => `${p1} am` },
-                                { regex: /\bin\s+big\s+company\b/gi, fix: 'in a big company' },
-                            ];
-
-                            rules.forEach(rule => {
-                                textToProcess = textToProcess.replace(rule.regex, rule.fix);
-                            });
-
-                            const response = await fetch('https://api.languagetool.org/v2/check', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: `text=${encodeURIComponent(textToProcess)}&language=en-US`
-                            });
-                            const result = await response.json();
-                            
-                            let correctedText = textToProcess;
-                            if (result.matches && result.matches.length > 0) {
-                                result.matches.sort((a, b) => b.offset - a.offset).forEach(match => {
-                                    if (match.replacements && match.replacements.length > 0) {
-                                        let replacement = match.replacements[0].value;
-                                        correctedText = correctedText.substring(0, match.offset) + replacement + correctedText.substring(match.offset + match.length);
-                                    }
-                                });
-                            }
-
-                            if (correctedText.length > 0 && !/[.!?]$/.test(correctedText)) {
-                                correctedText += '.';
-                            }
-
-                            // Only push a suggestion if LanguageTool actually changed the text
-                            // Ignore simple whitespace/period additions if there were no real matches
-                            const hasRealChanges = result.matches && result.matches.length > 0;
-                            const textChanged = correctedText.trim() !== data.text.trim();
-                            
-                            if (hasRealChanges || (textChanged && correctedText.replace(/[.!?]$/, '') !== data.text.replace(/[.!?]$/, ''))) {
-                                suggestions.push({
-                                    id: Date.now() + 2, type: 'grammar', original: data.text,
-                                    suggestion: correctedText,
-                                    message: 'Grammar, punctuation, and sentence structure improved.'
-                                });
-                            }
-                        } catch (err) {
-                            console.error('LanguageTool Error:', err);
-                            suggestions.push({
-                                id: Date.now() + 4, type: 'grammar', original: data.text,
-                                suggestion: data.text + '.',
-                                message: 'Could not connect to grammar API.'
-                            });
-                        }
-                    } else {
-                        const messages = {
-                            professional: 'Consider rephrasing for a professional context.',
-                            formal: 'This phrase could be more formal.',
-                            friendly: 'Make this sound warmer and more approachable.',
-                            academic: 'Use more precise, academic terminology here.'
-                        };
-                        let errorMsg = 'The AI provider is temporarily unavailable. Please try again.';
-                        if (data.lastAiError && data.lastAiError.includes('key not valid')) {
-                             errorMsg = 'API Key is invalid. Please check your Render environment variables (remove quotes).';
-                        } else if (data.lastAiError && data.lastAiError.includes('429')) {
-                             errorMsg = 'The free tier limit was reached. Please wait 60 seconds.';
-                        } else if (data.lastAiError) {
-                             errorMsg = data.lastAiError.substring(0, 100);
-                        }
+                if (data.mode === 'grammar') {
+                    try {
+                        let textToProcess = data.text;
                         
+                        const rules = [
+                            { regex: /\b(he|she|it)\s+are\b/gi, fix: (m, p1) => `${p1} is` },
+                            { regex: /\b(this\s+[a-z]+)\s+are\b/gi, fix: (m, p1) => `${p1} is` },
+                            { regex: /\b(we|they)\s+was\b/gi, fix: (m, p1) => `${p1} were` },
+                            { regex: /\b(i)\s+is\b/gi, fix: (m, p1) => `${p1} am` },
+                            { regex: /\bin\s+big\s+company\b/gi, fix: 'in a big company' },
+                        ];
+
+                        rules.forEach(rule => {
+                            textToProcess = textToProcess.replace(rule.regex, rule.fix);
+                        });
+
+                        const response = await fetch('https://api.languagetool.org/v2/check', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: `text=${encodeURIComponent(textToProcess)}&language=en-US`
+                        });
+                        const result = await response.json();
+                        
+                        let correctedText = textToProcess;
+                        if (result.matches && result.matches.length > 0) {
+                            result.matches.sort((a, b) => b.offset - a.offset).forEach(match => {
+                                if (match.replacements && match.replacements.length > 0) {
+                                    let replacement = match.replacements[0].value;
+                                    correctedText = correctedText.substring(0, match.offset) + replacement + correctedText.substring(match.offset + match.length);
+                                }
+                            });
+                        }
+
+                        if (correctedText.length > 0 && !/[.!?]$/.test(correctedText)) {
+                            correctedText += '.';
+                        }
+
+                        // Only push a suggestion if LanguageTool actually changed the text
+                        // Ignore simple whitespace/period additions if there were no real matches
+                        const hasRealChanges = result.matches && result.matches.length > 0;
+                        const textChanged = correctedText.trim() !== data.text.trim();
+                        
+                        if (hasRealChanges || (textChanged && correctedText.replace(/[.!?]$/, '') !== data.text.replace(/[.!?]$/, ''))) {
+                            suggestions.push({
+                                id: Date.now() + 2, type: 'grammar', original: data.text,
+                                suggestion: correctedText,
+                                message: 'Grammar, punctuation, and sentence structure improved.'
+                            });
+                        }
+                    } catch (err) {
+                        console.error('LanguageTool Error:', err);
                         suggestions.push({
-                            id: Date.now() + 3,
-                            type: 'tone',
-                            original: data.text.substring(0, Math.min(20, data.text.length)),
-                            suggestion: `[AI Error] ${errorMsg}`,
-                            message: messages[data.mode] || 'Tone adjustment recommended.'
+                            id: Date.now() + 4, type: 'grammar', original: data.text,
+                            suggestion: data.text + '.',
+                            message: 'Could not connect to grammar API.'
                         });
                     }
-                    suggestions.forEach(sugg => socket.emit('ai_suggestion', sugg));
-                }, 500);
+                } else {
+                    const messages = {
+                        professional: 'Consider rephrasing for a professional context.',
+                        formal: 'This phrase could be more formal.',
+                        friendly: 'Make this sound warmer and more approachable.',
+                        academic: 'Use more precise, academic terminology here.'
+                    };
+                    let errorMsg = 'The AI provider is temporarily unavailable. Please try again.';
+                    if (data.lastAiError && data.lastAiError.includes('key not valid')) {
+                         errorMsg = 'API Key is invalid. Please check your Render environment variables (remove quotes).';
+                    } else if (data.lastAiError && data.lastAiError.includes('429')) {
+                         errorMsg = 'The free tier limit was reached. Please wait 60 seconds.';
+                    } else if (data.lastAiError) {
+                         errorMsg = data.lastAiError.substring(0, 100);
+                    }
+                    
+                    suggestions.push({
+                        id: Date.now() + 3,
+                        type: 'tone',
+                        original: data.text.substring(0, Math.min(20, data.text.length)),
+                        suggestion: `[AI Error] ${errorMsg}`,
+                        message: messages[data.mode] || 'Tone adjustment recommended.'
+                    });
+                }
+                suggestions.forEach(sugg => socket.emit('ai_suggestion', sugg));
             } else {
                 suggestions.forEach(sugg => socket.emit('ai_suggestion', sugg));
             }

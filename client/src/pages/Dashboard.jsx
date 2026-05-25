@@ -126,7 +126,7 @@ const Dashboard = () => {
              updateAnalytics({ readabilityScore: metrics.readability.score });
           }
         }
-      }, 2000); // Reduced to 2 seconds for faster real-time feedback per user request
+      }, 500); // Drastically reduced to 500ms for near-instantaneous feedback as requested
     },
   });
 
