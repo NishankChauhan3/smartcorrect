@@ -107,13 +107,14 @@ io.on('connection', (socket) => {
                                 suggestion: correctedText,
                                 message: data.mode === 'grammar' ? 'Grammar and structure improved by AI.' : `Rewritten in a ${data.mode} tone by AI.`
                             });
-                        } else {
+                        } else if (data.mode !== 'grammar') {
                              suggestions.push({
                                 id: Date.now(), type: data.mode, original: data.text,
-                                suggestion: data.text + (/[.!?]$/.test(data.text) ? '' : '.'),
-                                message: 'AI found no major issues.'
+                                suggestion: data.text,
+                                message: 'AI found no major tone improvements.'
                             });
                         }
+                        // If mode is grammar and text is unchanged, we simply do not push any suggestion to avoid annoying the user.
                         break; // Success, exit retry loop
                     } catch (geminiError) {
                         console.error("Gemini API Error in analyze_text:", geminiError.message || geminiError);

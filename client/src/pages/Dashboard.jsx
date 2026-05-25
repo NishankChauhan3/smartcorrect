@@ -108,8 +108,10 @@ const Dashboard = () => {
       
       analyzeTimeoutRef.current = setTimeout(() => {
         if (text.length > 5) {
-          // We have completely disabled automatic grammar checking to prevent annoying false positives from the free LanguageTool API.
-          // Grammar checking is now strictly manual via the "Analyze Text" button, which uses the powerful Gemini AI.
+          // Trigger real-time Gemini grammar check after 4 seconds of inactivity
+          setIsAnalyzing(true);
+          setSuggestions(prev => prev.filter(s => s.type !== 'grammar' && s.type !== 'tone'));
+          socket.emit('analyze_text', { text, mode: 'grammar' });
 
           // Auto-update document metrics (now 100% local and free, no API quota used)
           socket.emit('analyze_document', { text });
@@ -124,7 +126,7 @@ const Dashboard = () => {
              updateAnalytics({ readabilityScore: metrics.readability.score });
           }
         }
-      }, 1500); // Reduced to 1.5s for a smoother typing experience
+      }, 4000); // Increased to 4 seconds to prevent hitting Gemini's 15 RPM free tier limit
     },
   });
 
