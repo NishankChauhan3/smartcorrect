@@ -16,6 +16,18 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
+const syncImprovementHistory = (history) => {
+    const newHistory = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const oldEntry = history && history.find(h => h.date === dayStr);
+        newHistory.push({ date: dayStr, score: oldEntry ? oldEntry.score : 0 });
+    }
+    return newHistory;
+};
+
 // GET /api/analytics
 router.get('/', authMiddleware, async (req, res) => {
     try {
@@ -31,12 +43,9 @@ router.get('/', authMiddleware, async (req, res) => {
             };
         }
         
-        // Initialize default history if empty
-        if (!user.analytics.improvementHistory || user.analytics.improvementHistory.length === 0) {
-            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            user.analytics.improvementHistory = days.map(day => ({ date: day, score: 0 }));
-            await user.save();
-        }
+        user.analytics.improvementHistory = syncImprovementHistory(user.analytics.improvementHistory);
+        user.markModified('analytics');
+        await user.save();
         
         res.json(user.analytics);
     } catch (err) {
@@ -97,20 +106,18 @@ router.post('/update', authMiddleware, async (req, res) => {
         }
 
         if (readabilityScore) {
+            user.analytics.improvementHistory = syncImprovementHistory(user.analytics.improvementHistory);
+            
             const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
             let history = user.analytics.improvementHistory;
             
-            // Find today's entry or the last entry
-            let todayEntryIndex = history.findIndex(h => h.date === today);
+            // Because we synced, the last element is always today
+            let todayEntry = history[history.length - 1];
             
-            if (todayEntryIndex !== -1) {
+            if (todayEntry.date === today) {
                  // Simple moving average for the day
-                 const currentScore = history[todayEntryIndex].score;
-                 history[todayEntryIndex].score = currentScore === 0 ? readabilityScore : Math.round((currentScore + readabilityScore) / 2);
-            } else {
-                 // Push new day, shift old one
-                 history.shift();
-                 history.push({ date: today, score: readabilityScore });
+                 const currentScore = todayEntry.score;
+                 todayEntry.score = currentScore === 0 ? readabilityScore : Math.round((currentScore + readabilityScore) / 2);
             }
             user.analytics.improvementHistory = history;
         }
