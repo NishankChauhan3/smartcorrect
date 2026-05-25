@@ -127,6 +127,7 @@ io.on('connection', (socket) => {
                             await new Promise(resolve => setTimeout(resolve, 2000));
                             retries--;
                         } else {
+                            data.lastAiError = msg;
                             break; // Other error, fallback
                         }
                     }
@@ -201,11 +202,20 @@ io.on('connection', (socket) => {
                             friendly: 'Make this sound warmer and more approachable.',
                             academic: 'Use more precise, academic terminology here.'
                         };
+                        let errorMsg = 'The AI provider is temporarily unavailable. Please try again.';
+                        if (data.lastAiError && data.lastAiError.includes('key not valid')) {
+                             errorMsg = 'API Key is invalid. Please check your Render environment variables (remove quotes).';
+                        } else if (data.lastAiError && data.lastAiError.includes('429')) {
+                             errorMsg = 'The free tier limit was reached. Please wait 60 seconds.';
+                        } else if (data.lastAiError) {
+                             errorMsg = data.lastAiError.substring(0, 100);
+                        }
+                        
                         suggestions.push({
                             id: Date.now() + 3,
                             type: 'tone',
                             original: data.text.substring(0, Math.min(20, data.text.length)),
-                            suggestion: `[AI Temporarily Unavailable] The free tier limit of the AI provider was reached. Please wait 60 seconds and try again.`,
+                            suggestion: `[AI Error] ${errorMsg}`,
                             message: messages[data.mode] || 'Tone adjustment recommended.'
                         });
                     }
