@@ -230,69 +230,43 @@ io.on('connection', (socket) => {
 
     socket.on('analyze_document', async (data) => {
         try {
-            console.log('Generating document metrics...');
-            let metrics = {
-                sentiment: { label: 'Neutral', confidence: 0 },
-                readability: { score: 0, grammar: 0, professionalism: 0, clarity: 0 }
+            console.log('Generating document metrics locally...');
+            const text = data.text || '';
+            const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 0);
+            
+            // 1. Calculate Sentiment using 'sentiment' package
+            const Sentiment = require('sentiment');
+            const sentimentAnalyzer = new Sentiment();
+            const sentimentResult = sentimentAnalyzer.analyze(text);
+            
+            let label = 'Neutral';
+            if (sentimentResult.score > 1) label = 'Positive';
+            if (sentimentResult.score < -1) label = 'Negative';
+            
+            // Normalize sentiment score (0-100)
+            let conf = 50 + (sentimentResult.score * 10);
+            conf = Math.max(0, Math.min(100, conf));
+
+            // 2. Calculate Readability
+            // Simple heuristic: 100 - (avg word length * 5)
+            const avgWordLength = words.length > 0 ? words.reduce((acc, w) => acc + w.length, 0) / words.length : 0;
+            let readability = words.length > 0 ? 100 - (avgWordLength * 5) : 0;
+            readability = Math.max(0, Math.min(100, Math.round(readability)));
+
+            // 3. Fake Grammar, Professionalism, Clarity based on heuristics
+            const hasSlang = words.some(w => ['hlo', 'wht', 'r', 'u', 'lol', 'lmao', 'brb', 'idk', 'omg'].includes(w));
+            const grammar = hasSlang ? 65 : 95;
+            const professionalism = hasSlang ? 50 : 85;
+            const clarity = hasSlang ? 70 : 88;
+
+            const metrics = {
+                sentiment: { label, confidence: Math.round(conf) },
+                readability: { score: readability, grammar, professionalism, clarity }
             };
-            let usedAI = false;
 
-            if (apiManager.getCurrentKey() !== 'dummy_key') {
-                let retries = Math.max(apiManager.keys.length, 3);
-                while (retries > 0) {
-                    try {
-                        const model = apiManager.getModel("gemini-2.5-flash");
-                        const prompt = `Analyze the following text and return a JSON object with NO markdown formatting, just raw JSON. Do not include \`\`\`json.
-Text: ${data.text}
-
-JSON Schema required:
-{
-  "sentiment": { "label": "Positive" | "Neutral" | "Negative", "confidence": number (0-100) },
-  "readability": { "score": number (0-100), "grammar": number (0-100), "professionalism": number (0-100), "clarity": number (0-100) }
-}`;
-                        const generatePromise = model.generateContent(prompt);
-                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 8000));
-                        const result = await Promise.race([generatePromise, timeoutPromise]);
-                        let responseText = result.response.text().trim();
-                        if(responseText.startsWith('```json')) {
-                            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-                        }
-                        metrics = JSON.parse(responseText);
-                        usedAI = true;
-                        break;
-                    } catch (geminiError) {
-                        console.error("Gemini API Error in analyze_document:", geminiError.message || geminiError);
-                        const msg = (geminiError.message || geminiError || '').toString();
-                        const isRetryable = geminiError.status === 429 || geminiError.status === 503 || msg === 'TIMEOUT' || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
-                        if (isRetryable) {
-                            if (apiManager.keys.length > 1) {
-                                apiManager.rotateKey();
-                            }
-                            console.log("Rate limit/timeout hit. Waiting 2s before retrying...");
-                            await new Promise(resolve => setTimeout(resolve, 2000));
-                            retries--;
-                        } else {
-                            break; // Other error, fallback
-                        }
-                    }
-                }
-            }
-
-            if (!usedAI) {
-                // fallback mock
-                metrics = {
-                    sentiment: { label: 'Positive', confidence: 92 },
-                    readability: { score: 85, grammar: 90, professionalism: 80, clarity: 88 }
-                };
-                setTimeout(() => {
-                    socket.emit('document_metrics', metrics);
-                }, 1000);
-            } else {
-                socket.emit('document_metrics', metrics);
-            }
-
+            socket.emit('document_metrics', metrics);
         } catch (error) {
-            console.error(error);
+            console.error('Error generating local metrics:', error);
         }
     });
 
