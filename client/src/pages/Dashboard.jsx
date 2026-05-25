@@ -18,7 +18,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState({ words: 0, characters: 0 });
   const [metrics, setMetrics] = useState({
     sentiment: { label: 'Neutral', confidence: 0 },
-    readability: { score: 0, grammar: 0, professionalism: 0, clarity: 0 }
+    readability: { readability: 0, grammar: 0, professionalism: 0, clarity: 0 }
   });
 
   const [analytics, setAnalytics] = useState({

@@ -298,7 +298,7 @@ Text: ${data.text}`;
 
             const metrics = {
                 sentiment: { label, confidence: Math.round(conf) },
-                readability: { score: readability, grammar, professionalism, clarity }
+                readability: { readability, grammar, professionalism, clarity }
             };
 
             socket.emit('document_metrics', metrics);
@@ -323,14 +323,12 @@ Text: ${data.text}`;
                 let retries = Math.min(apiManager.keys.length, 2); // Max 2 retries to prevent UI freezing
                 while (retries > 0) {
                     try {
-                        const result = await executeWithQueue(() => {
-                            const model = apiManager.getModel("gemini-flash-lite-latest");
-                            const generatePromise = model.generateContent(prompt);
-                            const timeoutPromise = new Promise((_, reject) => 
-                                setTimeout(() => reject(new Error('TIMEOUT')), 15000)
-                            );
-                            return Promise.race([generatePromise, timeoutPromise]);
-                        });
+                        const model = apiManager.getModel("gemini-flash-lite-latest");
+                        const generatePromise = model.generateContent(prompt);
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+                        );
+                        const result = await Promise.race([generatePromise, timeoutPromise]);
                         responseText = result.response.text().trim();
                         usedAI = true;
                         break;
