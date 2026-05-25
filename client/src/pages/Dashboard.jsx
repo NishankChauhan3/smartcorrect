@@ -108,10 +108,8 @@ const Dashboard = () => {
       
       analyzeTimeoutRef.current = setTimeout(() => {
         if (text.length > 5) {
-          // Send auto flag to force LanguageTool for real-time grammar (saves AI quota)
-          setIsAnalyzing(true);
-          setSuggestions(prev => prev.filter(s => s.type !== 'grammar' && s.type !== 'tone'));
-          socket.emit('analyze_text', { text, mode: 'grammar', auto: true });
+          // We have completely disabled automatic grammar checking to prevent annoying false positives from the free LanguageTool API.
+          // Grammar checking is now strictly manual via the "Analyze Text" button, which uses the powerful Gemini AI.
 
           // Auto-update document metrics (now 100% local and free, no API quota used)
           socket.emit('analyze_document', { text });
