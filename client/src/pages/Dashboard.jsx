@@ -88,28 +88,42 @@ const Dashboard = () => {
 
   const analyzeTimeoutRef = useRef(null);
   const prevWordCountRef = useRef(0);
-  const lastAiRequestTimeRef = useRef(0);
+  const nextAvailableAiTimeRef = useRef(Date.now());
 
-  // Global Rate Limiter: Ensures we NEVER exceed Google's 15 requests per minute limit (1 request every 4 seconds)
+  // Global True Queue: Mathematically guarantees we NEVER exceed Google's 15 requests per minute limit
   const safeEmitAi = (eventName, payload, isManual = false) => {
-    const MIN_INTERVAL = 4100; // 4.1 seconds
+    const MIN_INTERVAL = 4100; // 4.1 seconds between requests
     const now = Date.now();
-    const timeSinceLast = now - lastAiRequestTimeRef.current;
-
-    if (timeSinceLast >= MIN_INTERVAL) {
-      lastAiRequestTimeRef.current = now;
+    
+    let timeToWait = nextAvailableAiTimeRef.current - now;
+    
+    if (timeToWait <= 0) {
+      // API is free. Fire instantly!
+      nextAvailableAiTimeRef.current = now + MIN_INTERVAL;
       socket.emit(eventName, payload);
     } else {
       if (isManual) {
-        // If user manually clicks a button, wait the remaining cooldown and then fire it
+        // User clicked a button. Queue it up exactly when the API becomes free!
+        const waitDuration = timeToWait;
+        nextAvailableAiTimeRef.current = now + timeToWait + MIN_INTERVAL;
+        
         setTimeout(() => {
-          lastAiRequestTimeRef.current = Date.now();
           socket.emit(eventName, payload);
-        }, MIN_INTERVAL - timeSinceLast);
+        }, waitDuration);
       } else {
-        // If it's just a background typing check, silently skip it to save quota
-        console.log("Background AI check skipped to protect 15 RPM quota.");
-        setIsAnalyzing(false);
+        // It's a background typing check.
+        // To avoid queueing up 50 background checks while typing, we only queue it if the wait isn't too long,
+        // otherwise we skip it (they'll get another check next time they pause).
+        if (timeToWait < 8000) {
+           const waitDuration = timeToWait;
+           nextAvailableAiTimeRef.current = now + timeToWait + MIN_INTERVAL;
+           setTimeout(() => {
+             socket.emit(eventName, payload);
+           }, waitDuration);
+        } else {
+           console.log("API busy. Background check skipped to protect quota.");
+           setIsAnalyzing(false);
+        }
       }
     }
   };
@@ -133,10 +147,10 @@ const Dashboard = () => {
       
       analyzeTimeoutRef.current = setTimeout(() => {
         if (text.length > 5) {
-          // Trigger real-time LanguageTool grammar check (uses 0 API quota, infinitely fast)
+          // Trigger real-time Gemini grammar check through the global rate limiter
           setIsAnalyzing(true);
           setSuggestions(prev => prev.filter(s => s.type !== 'grammar' && s.type !== 'tone'));
-          safeEmitAi('analyze_text', { text, mode: 'grammar', auto: true }, false);
+          safeEmitAi('analyze_text', { text, mode: 'grammar', isBackground: true }, false);
 
           // Auto-update document metrics (now 100% local and free, no API quota used)
           socket.emit('analyze_document', { text });
