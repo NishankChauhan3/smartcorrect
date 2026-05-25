@@ -56,7 +56,7 @@ class APIKeyManager {
         return false;
     }
     
-    getModel(modelName = "gemini-flash-lite-latest") {
+    getModel(modelName = "gemini-1.5-flash") {
         const genAI = new GoogleGenerativeAI(this.getCurrentKey());
         return genAI.getGenerativeModel({ model: modelName });
     }
@@ -78,7 +78,7 @@ io.on('connection', (socket) => {
                 let retries = apiManager.keys.length;
                 while (retries > 0) {
                     try {
-                        const model = apiManager.getModel("gemini-flash-lite-latest");
+                        const model = apiManager.getModel("gemini-1.5-flash");
                         let prompt = "";
                         if (data.mode === 'grammar') {
                             prompt = `You are an expert grammar checker. Correct any spelling, punctuation, grammar, or sentence structure issues in the following text. Return ONLY the fully corrected text. Do not include quotes, explanations, or any other text.\n\nText: ${data.text}`;
@@ -86,7 +86,7 @@ io.on('connection', (socket) => {
                             prompt = `You are an expert copywriter. Rewrite the following text strictly in a ${data.mode} tone. Return ONLY the rewritten text. Do not include quotes, explanations, or any other text.\n\nText: ${data.text}`;
                         }
                         const generatePromise = model.generateContent(prompt);
-                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 2000));
+                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 8000));
                         const result = await Promise.race([generatePromise, timeoutPromise]);
                         const correctedText = result.response.text().trim();
                         usedAI = true;
@@ -216,7 +216,7 @@ io.on('connection', (socket) => {
                 let retries = apiManager.keys.length;
                 while (retries > 0) {
                     try {
-                        const model = apiManager.getModel("gemini-flash-lite-latest");
+                        const model = apiManager.getModel("gemini-1.5-flash");
                         const prompt = `Analyze the following text and return a JSON object with NO markdown formatting, just raw JSON. Do not include \`\`\`json.
 Text: ${data.text}
 
@@ -226,7 +226,7 @@ JSON Schema required:
   "readability": { "score": number (0-100), "grammar": number (0-100), "professionalism": number (0-100), "clarity": number (0-100) }
 }`;
                         const generatePromise = model.generateContent(prompt);
-                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 2000));
+                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 8000));
                         const result = await Promise.race([generatePromise, timeoutPromise]);
                         let responseText = result.response.text().trim();
                         if(responseText.startsWith('```json')) {
@@ -281,12 +281,12 @@ JSON Schema required:
                 let retries = Math.min(apiManager.keys.length, 2); // Max 2 retries to prevent UI freezing
                 while (retries > 0) {
                     try {
-                        const model = apiManager.getModel("gemini-flash-lite-latest");
+                        const model = apiManager.getModel("gemini-1.5-flash");
                         
                         // Add a 2-second timeout to prevent the SDK from hanging on 429 retries
                         const generatePromise = model.generateContent(prompt);
                         const timeoutPromise = new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('TIMEOUT')), 2000)
+                            setTimeout(() => reject(new Error('TIMEOUT')), 8000)
                         );
                         
                         const result = await Promise.race([generatePromise, timeoutPromise]);
