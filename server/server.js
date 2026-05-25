@@ -119,16 +119,24 @@ io.on('connection', (socket) => {
                     } catch (geminiError) {
                         console.error("Gemini API Error in analyze_text:", geminiError.message || geminiError);
                         const msg = (geminiError.message || geminiError || '').toString();
+                        data.lastAiError = msg; // ALWAYS save the last error
+
                         const isRetryable = geminiError.status === 429 || geminiError.status === 503 || msg === 'TIMEOUT' || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
                         if (isRetryable) {
                             if (apiManager.keys.length > 1) {
                                 apiManager.rotateKey();
+                                console.log("Rate limit/timeout hit. Rotated key and retrying...");
+                                // Fast retry if we rotated key
+                            } else {
+                                // If we only have 1 key and we hit 429, waiting 2 seconds won't help a 60-second limit. Fail instantly.
+                                if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+                                    break; 
+                                }
+                                console.log("Timeout/Error hit. Waiting 2s before retrying...");
+                                await new Promise(resolve => setTimeout(resolve, 2000));
                             }
-                            console.log("Rate limit/timeout hit. Waiting 2s before retrying...");
-                            await new Promise(resolve => setTimeout(resolve, 2000));
                             retries--;
                         } else {
-                            data.lastAiError = msg;
                             break; // Other error, fallback
                         }
                     }

@@ -126,7 +126,7 @@ const Dashboard = () => {
              updateAnalytics({ readabilityScore: metrics.readability.score });
           }
         }
-      }, 4000); // Increased to 4 seconds to prevent hitting Gemini's 15 RPM free tier limit
+      }, 2000); // Reduced to 2 seconds for faster real-time feedback per user request
     },
   });
 
