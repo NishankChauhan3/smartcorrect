@@ -14,6 +14,16 @@ const io = new Server(server, {
     }
 });
 
+global.errorLogs = [];
+const originalConsoleError = console.error;
+console.error = function(...args) {
+    global.errorLogs.push({ time: new Date().toISOString(), args: args.map(a => typeof a === 'object' ? JSON.stringify(a, Object.getOwnPropertyNames(a)) : a) });
+    if (global.errorLogs.length > 50) global.errorLogs.shift();
+    originalConsoleError.apply(console, args);
+};
+
+app.get('/api/debug/logs', (req, res) => res.json(global.errorLogs));
+
 app.use(cors());
 app.use(express.json());
 
@@ -195,7 +205,7 @@ io.on('connection', (socket) => {
                             id: Date.now() + 3,
                             type: 'tone',
                             original: data.text.substring(0, Math.min(20, data.text.length)),
-                            suggestion: `[${data.mode.toUpperCase()} TONE] Rephrased text goes here...`,
+                            suggestion: `[AI Temporarily Unavailable] The free tier limit of the AI provider was reached. Please wait 60 seconds and try again.`,
                             message: messages[data.mode] || 'Tone adjustment recommended.'
                         });
                     }
