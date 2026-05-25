@@ -108,10 +108,10 @@ const Dashboard = () => {
       
       analyzeTimeoutRef.current = setTimeout(() => {
         if (text.length > 5) {
-          // Trigger real-time LanguageTool grammar check (uses 0 API quota, infinitely fast)
+          // Trigger real-time Gemini grammar check (with a reasonable delay to protect quota)
           setIsAnalyzing(true);
           setSuggestions(prev => prev.filter(s => s.type !== 'grammar' && s.type !== 'tone'));
-          socket.emit('analyze_text', { text, mode: 'grammar', auto: true });
+          socket.emit('analyze_text', { text, mode: 'grammar', isBackground: true });
 
           // Auto-update document metrics (now 100% local and free, no API quota used)
           socket.emit('analyze_document', { text });
@@ -126,7 +126,7 @@ const Dashboard = () => {
              updateAnalytics({ readabilityScore: metrics.readability.score });
           }
         }
-      }, 500); // Drastically reduced to 500ms for near-instantaneous feedback as requested
+      }, 3000); // Set to 3000ms to balance speed and Google AI quota limits
     },
   });
 
