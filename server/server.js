@@ -144,37 +144,87 @@ io.on('connection', (socket) => {
             }
 
             if (!usedAI) {
-                // If it was a background grammar check, fail silently so we don't annoy the user with error popups while they type.
-                // We completely removed LanguageTool because it produces terrible results for internet slang (e.g. 'hlo' -> 'HBO').
-                if (data.isBackground) {
-                    return; // Silently abort
-                }
+                // If it's an automatic background check, route to LanguageTool (0 quota).
+                if (data.mode === 'grammar' && data.auto) {
+                    try {
+                        let textToProcess = data.text;
+                        
+                        const rules = [
+                            { regex: /\b(he|she|it)\s+are\b/gi, fix: (m, p1) => `${p1} is` },
+                            { regex: /\b(this\s+[a-z]+)\s+are\b/gi, fix: (m, p1) => `${p1} is` },
+                            { regex: /\b(we|they)\s+was\b/gi, fix: (m, p1) => `${p1} were` },
+                            { regex: /\b(i)\s+is\b/gi, fix: (m, p1) => `${p1} am` },
+                        ];
 
-                // If it was a manual click (Analyze Text or a Tone button), show the exact error message.
-                const messages = {
-                    grammar: 'Could not complete grammar check.',
-                    professional: 'Consider rephrasing for a professional context.',
-                    formal: 'This phrase could be more formal.',
-                    friendly: 'Make this sound warmer and more approachable.',
-                    academic: 'Use more precise, academic terminology here.'
-                };
-                
-                let errorMsg = 'The AI provider is temporarily unavailable. Please try again.';
-                if (data.lastAiError && data.lastAiError.includes('key not valid')) {
-                     errorMsg = 'API Key is invalid. Please check your Render environment variables (remove quotes).';
-                } else if (data.lastAiError && data.lastAiError.includes('429')) {
-                     errorMsg = 'The free tier limit was reached. Please wait 60 seconds.';
-                } else if (data.lastAiError) {
-                     errorMsg = data.lastAiError.substring(0, 100);
+                        rules.forEach(rule => {
+                            textToProcess = textToProcess.replace(rule.regex, rule.fix);
+                        });
+
+                        // We DISABLE MORFOLOGIK_RULE_EN_US (the spellchecker) so it doesn't suggest "HBO" for "hlo" (internet slang).
+                        // It will ONLY check actual grammar rules now, making it incredibly fast, free, and accurate!
+                        const response = await fetch('https://api.languagetool.org/v2/check', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: `text=${encodeURIComponent(textToProcess)}&language=en-US&disabledRules=MORFOLOGIK_RULE_EN_US,WHITESPACE_RULE,PUNCTUATION_PARAGRAPH_END`
+                        });
+                        const result = await response.json();
+                        
+                        let correctedText = textToProcess;
+                        if (result.matches && result.matches.length > 0) {
+                            result.matches.sort((a, b) => b.offset - a.offset).forEach(match => {
+                                if (match.replacements && match.replacements.length > 0) {
+                                    let replacement = match.replacements[0].value;
+                                    correctedText = correctedText.substring(0, match.offset) + replacement + correctedText.substring(match.offset + match.length);
+                                }
+                            });
+                        }
+
+                        if (correctedText.length > 0 && !/[.!?]$/.test(correctedText)) {
+                            correctedText += '.';
+                        }
+
+                        const hasRealChanges = result.matches && result.matches.length > 0;
+                        const textChanged = correctedText.trim() !== data.text.trim();
+                        
+                        if (hasRealChanges || (textChanged && correctedText.replace(/[.!?]$/, '') !== data.text.replace(/[.!?]$/, ''))) {
+                            suggestions.push({
+                                id: Date.now() + 2, type: 'grammar', original: data.text,
+                                suggestion: correctedText,
+                                message: 'Grammar, punctuation, and sentence structure improved.'
+                            });
+                        }
+                    } catch (err) {
+                        console.error('LanguageTool Error:', err);
+                    }
+                } else if (data.isBackground) {
+                    return; // Silently abort background Tone checks if they hit the limit
+                } else {
+                    // If it was a manual click (Analyze Text or a Tone button), show the exact error message.
+                    const messages = {
+                        grammar: 'Could not complete grammar check.',
+                        professional: 'Consider rephrasing for a professional context.',
+                        formal: 'This phrase could be more formal.',
+                        friendly: 'Make this sound warmer and more approachable.',
+                        academic: 'Use more precise, academic terminology here.'
+                    };
+                    
+                    let errorMsg = 'The AI provider is temporarily unavailable. Please try again.';
+                    if (data.lastAiError && data.lastAiError.includes('key not valid')) {
+                         errorMsg = 'API Key is invalid. Please check your Render environment variables (remove quotes).';
+                    } else if (data.lastAiError && data.lastAiError.includes('429')) {
+                         errorMsg = 'The free tier limit was reached. Please wait 60 seconds.';
+                    } else if (data.lastAiError) {
+                         errorMsg = data.lastAiError.substring(0, 100);
+                    }
+                    
+                    suggestions.push({
+                        id: Date.now() + 3,
+                        type: data.mode === 'grammar' ? 'grammar' : 'tone',
+                        original: data.text.substring(0, Math.min(20, data.text.length)),
+                        suggestion: `[AI Error] ${errorMsg}`,
+                        message: messages[data.mode] || 'Adjustment recommended.'
+                    });
                 }
-                
-                suggestions.push({
-                    id: Date.now() + 3,
-                    type: data.mode === 'grammar' ? 'grammar' : 'tone',
-                    original: data.text.substring(0, Math.min(20, data.text.length)),
-                    suggestion: `[AI Error] ${errorMsg}`,
-                    message: messages[data.mode] || 'Adjustment recommended.'
-                });
                 
                 suggestions.forEach(sugg => socket.emit('ai_suggestion', sugg));
             } else {
