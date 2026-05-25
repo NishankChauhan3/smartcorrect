@@ -312,8 +312,8 @@ Text: ${data.text}`;
             console.log(`Processing AI Tool: ${data.action}`);
             let prompt = '';
             if (data.action === 'summarize') prompt = `Summarize the following text concisely. Return ONLY the summarized text, no markdown or extra conversational words:\n\n${data.text}`;
-            if (data.action === 'expand') prompt = `Expand the following short sentence(s) into a detailed, professional paragraph. Return ONLY the expanded text, no markdown or extra conversational words:\n\n${data.text}`;
-            if (data.action === 'bullets') prompt = `Convert the following paragraph into a concise bulleted list. Return ONLY the list, no markdown or extra conversational words:\n\n${data.text}`;
+            if (data.action === 'expand') prompt = `Expand the following short sentence(s) into a brief 2-3 sentence paragraph. Return ONLY the expanded text, no markdown or extra conversational words:\n\n${data.text}`;
+            if (data.action === 'bullets') prompt = `Convert the following paragraph into a short 3-point bulleted list. Return ONLY the list, no markdown or extra conversational words:\n\n${data.text}`;
             if (data.action === 'translate') prompt = `Translate the following text into ${data.language || 'Spanish'}. Return ONLY the translated text, no markdown or extra conversational words:\n\n${data.text}`;
 
             let responseText = `[${data.action.toUpperCase()} RESULT] ...`; // Fallback
@@ -393,6 +393,7 @@ Text: ${data.text}`;
                 message: `AI generated a ${data.action} for your selected text.`,
                 isReplaceSelection: data.hasSelection // Add a flag so the frontend knows to replace selection
             });
+            socket.emit('analyze_complete');
 
         } catch (error) {
             console.error('AI Tool Event Error:', error);
