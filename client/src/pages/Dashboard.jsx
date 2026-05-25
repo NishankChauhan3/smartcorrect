@@ -482,9 +482,9 @@ const Dashboard = () => {
                   <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingUp size={18} className="text-accentBlue"/> Writing Improvement</h3>
                   <div className="h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={analytics.improvementHistory}>
+                      <LineChart data={analytics.improvementHistory} margin={{ top: 5, right: 5, left: -20, bottom: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                        <XAxis dataKey="date" stroke="#64748B" fontSize={12} />
+                        <XAxis dataKey="date" stroke="#64748B" fontSize={12} tickMargin={5} />
                         <YAxis stroke="#64748B" fontSize={12} domain={[0, 100]} />
                         <Tooltip contentStyle={{ backgroundColor: '#111827', borderColor: '#1E293B', borderRadius: '8px' }} />
                         <Line type="monotone" dataKey="score" stroke="#38BDF8" strokeWidth={3} dot={{ r: 4, fill: '#38BDF8' }} activeDot={{ r: 6 }} />
@@ -497,9 +497,9 @@ const Dashboard = () => {
                   <h3 className="text-lg font-semibold mb-6">Corrections Breakdown</h3>
                   <div className="h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={dynamicCorrectionsData}>
+                      <BarChart data={dynamicCorrectionsData} margin={{ top: 5, right: 5, left: -20, bottom: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                        <XAxis dataKey="name" stroke="#64748B" fontSize={12} />
+                        <XAxis dataKey="name" stroke="#64748B" fontSize={12} tickMargin={5} />
                         <YAxis stroke="#64748B" fontSize={12} />
                         <Tooltip cursor={{ fill: '#1E293B' }} contentStyle={{ backgroundColor: '#111827', borderColor: '#1E293B', borderRadius: '8px' }} />
                         <Bar dataKey="fixed" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
