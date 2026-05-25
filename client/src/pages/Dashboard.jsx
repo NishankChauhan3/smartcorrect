@@ -37,9 +37,10 @@ const Dashboard = () => {
   const updateAnalytics = async (payload) => {
     try {
       const token = localStorage.getItem('token');
+      const localDate = new Date().toLocaleDateString('en-CA');
       const response = await fetch('https://smartcorrect-backend-8el6.onrender.com/api/analytics/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'x-local-date': localDate },
         body: JSON.stringify(payload)
       });
       if(response.ok) {
@@ -61,8 +62,9 @@ const Dashboard = () => {
 
     const fetchAnalytics = async () => {
       try {
+        const localDate = new Date().toLocaleDateString('en-CA');
         const response = await fetch('https://smartcorrect-backend-8el6.onrender.com/api/analytics', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}`, 'x-local-date': localDate }
         });
         if(response.ok) {
           const data = await response.json();
