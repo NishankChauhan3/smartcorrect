@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit';
 import io from 'socket.io-client';
 import { LayoutDashboard, FileText, BarChart3, LogOut, Loader2, Check, X, RefreshCw, MessageSquare, Sparkles, Smile, Frown, Meh, TrendingUp, Download, Copy } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import debounce from 'lodash.debounce';
 
 const socket = io('https://smartcorrect-backend-8el6.onrender.com');
 
@@ -86,47 +87,25 @@ const Dashboard = () => {
     };
   }, [navigate]);
 
-  const analyzeTimeoutRef = useRef(null);
   const prevWordCountRef = useRef(0);
-  const nextAvailableAiTimeRef = useRef(Date.now());
 
-  // Global True Queue: Mathematically guarantees we NEVER exceed Google's 15 requests per minute limit
-  const safeEmitAi = (eventName, payload, isManual = false) => {
-    const MIN_INTERVAL = 4100; // 4.1 seconds between requests
-    const now = Date.now();
-    
-    let timeToWait = nextAvailableAiTimeRef.current - now;
-    
-    if (timeToWait <= 0) {
-      // API is free. Fire instantly!
-      nextAvailableAiTimeRef.current = now + MIN_INTERVAL;
-      socket.emit(eventName, payload);
-    } else {
-      if (isManual) {
-        // User clicked a button. Queue it up exactly when the API becomes free!
-        const waitDuration = timeToWait;
-        nextAvailableAiTimeRef.current = now + timeToWait + MIN_INTERVAL;
-        
-        setTimeout(() => {
-          socket.emit(eventName, payload);
-        }, waitDuration);
-      } else {
-        // It's a background typing check.
-        // To avoid queueing up 50 background checks while typing, we only queue it if the wait isn't too long,
-        // otherwise we skip it (they'll get another check next time they pause).
-        if (timeToWait < 8000) {
-           const waitDuration = timeToWait;
-           nextAvailableAiTimeRef.current = now + timeToWait + MIN_INTERVAL;
-           setTimeout(() => {
-             socket.emit(eventName, payload);
-           }, waitDuration);
-        } else {
-           console.log("API busy. Background check skipped to protect quota.");
-           setIsAnalyzing(false);
+  // Step 2: Add Debouncing using lodash.debounce
+  const debouncedAnalyze = useRef(
+    debounce((text) => {
+      if (text.length > 5) {
+        setIsAnalyzing(true);
+        setSuggestions([]);
+        socket.emit('analyze_text', { text, mode: 'grammar' });
+
+        const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+        const wordsAdded = Math.max(0, wordCount - prevWordCountRef.current);
+        prevWordCountRef.current = wordCount;
+        if (wordsAdded > 0) {
+          updateAnalytics({ wordsAdded });
         }
       }
-    }
-  };
+    }, 1500)
+  ).current;
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -137,35 +116,11 @@ const Dashboard = () => {
     onUpdate: ({ editor }) => {
       const text = editor.getText();
       setStats({
-        words: text.trim() === '' ? 0 : text.trim().split(/\\s+/).length,
+        words: text.trim() === '' ? 0 : text.trim().split(/\s+/).length,
         characters: text.length
       });
       
-      if (analyzeTimeoutRef.current) {
-        clearTimeout(analyzeTimeoutRef.current);
-      }
-      
-      analyzeTimeoutRef.current = setTimeout(() => {
-        if (text.length > 5) {
-          // Trigger real-time Gemini grammar check through the global rate limiter
-          setIsAnalyzing(true);
-          setSuggestions(prev => prev.filter(s => s.type !== 'grammar' && s.type !== 'tone'));
-          safeEmitAi('analyze_text', { text, mode: 'grammar', isBackground: true }, false);
-
-          // Auto-update document metrics (now 100% local and free, no API quota used)
-          socket.emit('analyze_document', { text });
-
-          const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
-          const wordsAdded = Math.max(0, wordCount - prevWordCountRef.current);
-          prevWordCountRef.current = wordCount;
-          if (wordsAdded > 0) {
-            updateAnalytics({ wordsAdded });
-          }
-          if (metrics.readability.score > 0) {
-             updateAnalytics({ readabilityScore: metrics.readability.score });
-          }
-        }
-      }, 500); // 500ms typing debounce. Safe because auto:true uses 0 quota.
+      debouncedAnalyze(text);
     },
   });
 
@@ -176,10 +131,10 @@ const Dashboard = () => {
   };
 
   const handleAnalyze = (mode = 'grammar') => {
-    if (!editor) return;
+    if (!editor || isAnalyzing) return; // Step 3: Prevent Duplicate API Requests
     setIsAnalyzing(true);
-    setSuggestions(prev => prev.filter(s => s.type !== mode && (mode === 'grammar' ? s.type !== 'tone' : s.type !== 'grammar')));
-    safeEmitAi('analyze_text', { text: editor.getText(), mode }, true);
+    setSuggestions([]); // Clear out previous suggestions to avoid clutter when switching tones
+    socket.emit('analyze_text', { text: editor.getText(), mode });
   };
 
   const [translateLang, setTranslateLang] = useState('Spanish');
@@ -198,9 +153,10 @@ const Dashboard = () => {
 
     if (!text || text.trim() === '') return;
 
+    if (isAnalyzing) return; // Loading protection
     setIsAnalyzing(true);
     setSuggestions(prev => prev.filter(s => s.type !== action));
-    safeEmitAi('ai_tool', { action, text, language: translateLang, hasSelection }, true);
+    socket.emit('ai_tool', { action, text, language: translateLang, hasSelection });
   };
 
   const [copyText, setCopyText] = useState('Copy Text');

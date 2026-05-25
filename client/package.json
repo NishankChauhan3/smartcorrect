@@ -17,6 +17,7 @@
     "autoprefixer": "^10.5.0",
     "axios": "^1.16.1",
     "framer-motion": "^12.40.0",
+    "lodash.debounce": "^4.0.8",
     "lucide-react": "^1.16.0",
     "postcss": "^8.5.15",
     "react": "^19.2.6",
