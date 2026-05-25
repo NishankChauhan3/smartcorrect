@@ -174,17 +174,16 @@ io.on('connection', (socket) => {
                                 correctedText += '.';
                             }
 
-                            if (correctedText !== data.text) {
+                            // Only push a suggestion if LanguageTool actually changed the text
+                            // Ignore simple whitespace/period additions if there were no real matches
+                            const hasRealChanges = result.matches && result.matches.length > 0;
+                            const textChanged = correctedText.trim() !== data.text.trim();
+                            
+                            if (hasRealChanges || (textChanged && correctedText.replace(/[.!?]$/, '') !== data.text.replace(/[.!?]$/, ''))) {
                                 suggestions.push({
                                     id: Date.now() + 2, type: 'grammar', original: data.text,
                                     suggestion: correctedText,
                                     message: 'Grammar, punctuation, and sentence structure improved.'
-                                });
-                            } else {
-                                suggestions.push({
-                                    id: Date.now() + 3, type: 'grammar', original: data.text,
-                                    suggestion: data.text + (/[.!?]$/.test(data.text) ? '' : '.'),
-                                    message: 'Looks good! Added final punctuation if missing.'
                                 });
                             }
                         } catch (err) {
