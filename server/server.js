@@ -74,6 +74,48 @@ class APIKeyManager {
 
 const apiManager = new APIKeyManager(process.env.GEMINI_API_KEY);
 
+// Global Backend AI Queue: Mathematically guarantees we NEVER exceed Google's 15 RPM limit
+const aiQueue = [];
+let isProcessingAi = false;
+let nextAvailableAiTime = Date.now();
+
+const processAiQueue = () => {
+    if (isProcessingAi || aiQueue.length === 0) return;
+    
+    const now = Date.now();
+    const timeToWait = Math.max(0, nextAvailableAiTime - now);
+    
+    if (timeToWait > 0) {
+        setTimeout(processAiQueue, timeToWait);
+        return;
+    }
+    
+    isProcessingAi = true;
+    nextAvailableAiTime = now + 4100; // Strictly enforce 4.1s between requests
+    
+    const task = aiQueue.shift();
+    task.execute().finally(() => {
+        isProcessingAi = false;
+        processAiQueue();
+    });
+};
+
+const executeWithQueue = (executeFn) => {
+    return new Promise((resolve, reject) => {
+        aiQueue.push({
+            execute: async () => {
+                try {
+                    const result = await executeFn();
+                    resolve(result);
+                } catch (err) {
+                    reject(err);
+                }
+            }
+        });
+        processAiQueue();
+    });
+};
+
 // Socket.IO for Real-time Suggestions
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
@@ -110,13 +152,19 @@ io.on('connection', (socket) => {
 If the text is short or incomplete, naturally expand it into a complete, well-formed sentence for the tones. Return ONLY the JSON object, with no markdown formatting.
 Text: ${data.text}`;
 
-                        const generatePromise = model.generateContent({
-                            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                            generationConfig: { responseMimeType: "application/json" }
+                        const result = await executeWithQueue(() => {
+                            const generatePromise = model.generateContent({
+                                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                                generationConfig: { responseMimeType: "application/json" }
+                            });
+                            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 15000));
+                            return Promise.race([generatePromise, timeoutPromise]);
                         });
-                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 15000));
-                        const result = await Promise.race([generatePromise, timeoutPromise]);
-                        const responseText = result.response.text().trim();
+                        
+                        let responseText = result.response.text().trim();
+                        // Sometimes Gemini returns markdown even when responseMimeType is json
+                        responseText = responseText.replace(/^```json/i, '').replace(/```$/i, '').trim();
+                        
                         usedAI = true;
                         
                         const aiData = JSON.parse(responseText);
@@ -261,15 +309,14 @@ Text: ${data.text}`;
                 let retries = Math.min(apiManager.keys.length, 2); // Max 2 retries to prevent UI freezing
                 while (retries > 0) {
                     try {
-                        const model = apiManager.getModel("gemini-2.5-flash");
-                        
-                        // Add a 2-second timeout to prevent the SDK from hanging on 429 retries
-                        const generatePromise = model.generateContent(prompt);
-                        const timeoutPromise = new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('TIMEOUT')), 15000)
-                        );
-                        
-                        const result = await Promise.race([generatePromise, timeoutPromise]);
+                        const result = await executeWithQueue(() => {
+                            const model = apiManager.getModel("gemini-1.5-flash");
+                            const generatePromise = model.generateContent(prompt);
+                            const timeoutPromise = new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+                            );
+                            return Promise.race([generatePromise, timeoutPromise]);
+                        });
                         responseText = result.response.text().trim();
                         usedAI = true;
                         break;
