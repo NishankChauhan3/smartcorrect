@@ -130,7 +130,7 @@ io.on('connection', (socket) => {
                 let retries = Math.max(apiManager.keys.length, 3);
                 while (retries > 0) {
                     try {
-                        const model = apiManager.getModel("gemini-1.5-flash");
+                        const model = apiManager.getModel("gemini-2.5-flash");
                         const prompt = `You are an expert writing assistant. Analyze the following text and return a strict JSON object with this exact structure:
 {
   "corrected_text": "The fully corrected text fixing spelling, grammar, and structure",
@@ -307,7 +307,7 @@ Text: ${data.text}`;
                 while (retries > 0) {
                     try {
                         const result = await executeWithQueue(() => {
-                            const model = apiManager.getModel("gemini-1.5-flash");
+                            const model = apiManager.getModel("gemini-2.5-flash");
                             const generatePromise = model.generateContent(prompt);
                             const timeoutPromise = new Promise((_, reject) => 
                                 setTimeout(() => reject(new Error('TIMEOUT')), 15000)
