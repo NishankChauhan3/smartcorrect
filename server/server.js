@@ -133,7 +133,7 @@ io.on('connection', (socket) => {
                         const model = apiManager.getModel("gemini-flash-lite-latest");
                         const prompt = `You are an expert writing assistant. Analyze the following text and return a strict JSON object with this exact structure:
 {
-  "corrected_text": "The fully corrected text fixing spelling, grammar, and structure",
+${data.fullAnalysis ? `  "corrected_text": "The fully corrected text fixing spelling, grammar, and structure",` : ''}
   "sentiment": {
     "label": "Positive, Negative, or Neutral",
     "confidence": 85
@@ -178,7 +178,7 @@ Text: ${data.text}`;
                         });
 
                         // Generate suggestions
-                        if (aiData.corrected_text && aiData.corrected_text !== data.text) {
+                        if (aiData.corrected_text && aiData.corrected_text !== data.text && data.fullAnalysis) {
                             suggestions.push({
                                 id: Date.now() + 1, type: 'grammar', original: data.text,
                                 suggestion: aiData.corrected_text,
@@ -259,6 +259,7 @@ Text: ${data.text}`;
             }
             
             suggestions.forEach(sugg => socket.emit('ai_suggestion', sugg));
+            socket.emit('analyze_complete');
         } catch (error) {
             socket.emit('ai_error', { message: 'Failed to connect to AI engine.' });
         }

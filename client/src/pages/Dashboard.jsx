@@ -77,6 +77,9 @@ const Dashboard = () => {
         const filtered = prev.filter(s => s.type !== suggestion.type);
         return [suggestion, ...filtered];
       });
+    });
+
+    socket.on('analyze_complete', () => {
       setIsAnalyzing(false);
     });
 
@@ -87,6 +90,7 @@ const Dashboard = () => {
     return () => {
       socket.off('ai_suggestion');
       socket.off('document_metrics');
+      socket.off('analyze_complete');
     };
   }, [navigate]);
 
