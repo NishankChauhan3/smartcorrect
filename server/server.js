@@ -96,7 +96,7 @@ io.on('connection', (socket) => {
                             prompt = `You are an expert copywriter. Rewrite the following text strictly in a ${data.mode} tone. Return ONLY the rewritten text. Do not include quotes, explanations, or any other text.\n\nText: ${data.text}`;
                         }
                         const generatePromise = model.generateContent(prompt);
-                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 8000));
+                        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 15000));
                         const result = await Promise.race([generatePromise, timeoutPromise]);
                         const correctedText = result.response.text().trim();
                         usedAI = true;
@@ -300,7 +300,7 @@ io.on('connection', (socket) => {
                         // Add a 2-second timeout to prevent the SDK from hanging on 429 retries
                         const generatePromise = model.generateContent(prompt);
                         const timeoutPromise = new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('TIMEOUT')), 8000)
+                            setTimeout(() => reject(new Error('TIMEOUT')), 15000)
                         );
                         
                         const result = await Promise.race([generatePromise, timeoutPromise]);
