@@ -75,7 +75,7 @@ io.on('connection', (socket) => {
             let usedAI = false;
 
             if (apiManager.getCurrentKey() !== 'dummy_key') {
-                let retries = apiManager.keys.length;
+                let retries = Math.max(apiManager.keys.length, 3);
                 while (retries > 0) {
                     try {
                         const model = apiManager.getModel("gemini-2.5-flash");
@@ -106,12 +106,19 @@ io.on('connection', (socket) => {
                         }
                         break; // Success, exit retry loop
                     } catch (geminiError) {
-                        console.error("Gemini API Error:", geminiError.message || geminiError);
-                        if (geminiError.status === 429 && apiManager.rotateKey()) {
+                        console.error("Gemini API Error in analyze_text:", geminiError.message || geminiError);
+                        const isRetryable = geminiError.status === 429 || geminiError.status === 503 || geminiError.message === 'TIMEOUT';
+                        if (isRetryable) {
+                            if (apiManager.keys.length > 1) {
+                                apiManager.rotateKey();
+                                console.log("Retrying with new key...");
+                            } else {
+                                console.log("Retrying after 2s delay...");
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+                            }
                             retries--;
-                            console.log("Retrying with new key...");
                         } else {
-                            break; // Other error or no more keys to rotate, fallback
+                            break; // Other error, fallback
                         }
                     }
                 }
@@ -213,7 +220,7 @@ io.on('connection', (socket) => {
             let usedAI = false;
 
             if (apiManager.getCurrentKey() !== 'dummy_key') {
-                let retries = apiManager.keys.length;
+                let retries = Math.max(apiManager.keys.length, 3);
                 while (retries > 0) {
                     try {
                         const model = apiManager.getModel("gemini-2.5-flash");
@@ -235,13 +242,20 @@ JSON Schema required:
                         metrics = JSON.parse(responseText);
                         usedAI = true;
                         break;
-                    } catch(e) {
-                        console.error('Gemini metrics error:', e.message || e);
-                        if (e.status === 429 && apiManager.rotateKey()) {
+                    } catch (geminiError) {
+                        console.error("Gemini API Error in analyze_document:", geminiError.message || geminiError);
+                        const isRetryable = geminiError.status === 429 || geminiError.status === 503 || geminiError.message === 'TIMEOUT';
+                        if (isRetryable) {
+                            if (apiManager.keys.length > 1) {
+                                apiManager.rotateKey();
+                                console.log("Retrying with new key...");
+                            } else {
+                                console.log("Retrying after 2s delay...");
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+                            }
                             retries--;
-                            console.log("Retrying metrics with new key...");
                         } else {
-                            break;
+                            break; // Other error, fallback
                         }
                     }
                 }
