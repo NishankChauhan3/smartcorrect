@@ -241,11 +241,8 @@ Text: ${data.text}`;
                     message: 'Adjustment recommended.'
                 });
             }
-                
-                suggestions.forEach(sugg => socket.emit('ai_suggestion', sugg));
-            } else {
-                suggestions.forEach(sugg => socket.emit('ai_suggestion', sugg));
-            }
+            
+            suggestions.forEach(sugg => socket.emit('ai_suggestion', sugg));
         } catch (error) {
             socket.emit('ai_error', { message: 'Failed to connect to AI engine.' });
         }
