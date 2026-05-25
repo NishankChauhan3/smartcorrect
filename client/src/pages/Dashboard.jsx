@@ -88,6 +88,31 @@ const Dashboard = () => {
 
   const analyzeTimeoutRef = useRef(null);
   const prevWordCountRef = useRef(0);
+  const lastAiRequestTimeRef = useRef(0);
+
+  // Global Rate Limiter: Ensures we NEVER exceed Google's 15 requests per minute limit (1 request every 4 seconds)
+  const safeEmitAi = (eventName, payload, isManual = false) => {
+    const MIN_INTERVAL = 4100; // 4.1 seconds
+    const now = Date.now();
+    const timeSinceLast = now - lastAiRequestTimeRef.current;
+
+    if (timeSinceLast >= MIN_INTERVAL) {
+      lastAiRequestTimeRef.current = now;
+      socket.emit(eventName, payload);
+    } else {
+      if (isManual) {
+        // If user manually clicks a button, wait the remaining cooldown and then fire it
+        setTimeout(() => {
+          lastAiRequestTimeRef.current = Date.now();
+          socket.emit(eventName, payload);
+        }, MIN_INTERVAL - timeSinceLast);
+      } else {
+        // If it's just a background typing check, silently skip it to save quota
+        console.log("Background AI check skipped to protect 15 RPM quota.");
+        setIsAnalyzing(false);
+      }
+    }
+  };
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -108,10 +133,10 @@ const Dashboard = () => {
       
       analyzeTimeoutRef.current = setTimeout(() => {
         if (text.length > 5) {
-          // Trigger real-time Gemini grammar check (with a reasonable delay to protect quota)
+          // Trigger real-time Gemini grammar check through the global rate limiter
           setIsAnalyzing(true);
           setSuggestions(prev => prev.filter(s => s.type !== 'grammar' && s.type !== 'tone'));
-          socket.emit('analyze_text', { text, mode: 'grammar', isBackground: true });
+          safeEmitAi('analyze_text', { text, mode: 'grammar', isBackground: true }, false);
 
           // Auto-update document metrics (now 100% local and free, no API quota used)
           socket.emit('analyze_document', { text });
@@ -126,7 +151,7 @@ const Dashboard = () => {
              updateAnalytics({ readabilityScore: metrics.readability.score });
           }
         }
-      }, 3000); // Set to 3000ms to balance speed and Google AI quota limits
+      }, 1000); // 1-second typing debounce. (Real requests still gated by safeEmitAi 4.1s limit)
     },
   });
 
@@ -140,7 +165,7 @@ const Dashboard = () => {
     if (!editor) return;
     setIsAnalyzing(true);
     setSuggestions(prev => prev.filter(s => s.type !== mode && (mode === 'grammar' ? s.type !== 'tone' : s.type !== 'grammar')));
-    socket.emit('analyze_text', { text: editor.getText(), mode });
+    safeEmitAi('analyze_text', { text: editor.getText(), mode }, true);
   };
 
   const [translateLang, setTranslateLang] = useState('Spanish');
@@ -161,7 +186,7 @@ const Dashboard = () => {
 
     setIsAnalyzing(true);
     setSuggestions(prev => prev.filter(s => s.type !== action));
-    socket.emit('ai_tool', { action, text, language: translateLang, hasSelection });
+    safeEmitAi('ai_tool', { action, text, language: translateLang, hasSelection }, true);
   };
 
   const [copyText, setCopyText] = useState('Copy Text');
