@@ -93,7 +93,7 @@ io.on('connection', (socket) => {
                         if (data.mode === 'grammar') {
                             prompt = `You are an expert grammar checker. Correct any spelling, punctuation, grammar, or sentence structure issues in the following text. Return ONLY the fully corrected text. Do not include quotes, explanations, or any other text.\n\nText: ${data.text}`;
                         } else {
-                            prompt = `You are an expert copywriter. Rewrite the following text strictly in a ${data.mode} tone. Return ONLY the rewritten text. Do not include quotes, explanations, or any other text.\n\nText: ${data.text}`;
+                            prompt = `You are an expert copywriter. Rewrite the following text strictly in a ${data.mode} tone. If the text is short or incomplete, naturally expand it into a complete, well-formed sentence in that tone. Return ONLY the rewritten text. Do not include quotes, explanations, or any other text.\n\nText: ${data.text}`;
                         }
                         const generatePromise = model.generateContent(prompt);
                         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 15000));
