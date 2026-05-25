@@ -95,7 +95,7 @@ const Dashboard = () => {
       if (text.length > 5) {
         setIsAnalyzing(true);
         setSuggestions([]);
-        socket.emit('analyze_text', { text, mode: 'grammar' });
+        socket.emit('analyze_text', { text, mode: 'grammar', fullAnalysis: false });
 
         const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
         const wordsAdded = Math.max(0, wordCount - prevWordCountRef.current);
@@ -134,7 +134,7 @@ const Dashboard = () => {
     if (!editor || isAnalyzing) return; // Step 3: Prevent Duplicate API Requests
     setIsAnalyzing(true);
     setSuggestions([]); // Clear out previous suggestions to avoid clutter when switching tones
-    socket.emit('analyze_text', { text: editor.getText(), mode });
+    socket.emit('analyze_text', { text: editor.getText(), mode, fullAnalysis: true });
   };
 
   const [translateLang, setTranslateLang] = useState('Spanish');

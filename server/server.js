@@ -143,13 +143,13 @@ io.on('connection', (socket) => {
     "readability": 80,
     "professionalism": 70,
     "clarity": 85
-  },
+  }${data.fullAnalysis ? `,
   "tones": {
     "formal": "The text rewritten strictly in a formal tone",
     "friendly": "The text rewritten strictly in a friendly tone",
     "professional": "The text rewritten strictly in a professional tone",
     "academic": "The text rewritten strictly in an academic tone"
-  }
+  }` : ''}
 }
 If the text is short or incomplete, naturally expand it into a complete, well-formed sentence for the tones. Return ONLY the JSON object, with no markdown formatting.
 Text: ${data.text}`;
