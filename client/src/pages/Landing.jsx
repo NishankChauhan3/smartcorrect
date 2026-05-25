@@ -75,8 +75,8 @@ const Landing = () => {
               <div className="h-12 w-12 bg-accentBlue/10 rounded-xl flex items-center justify-center mb-6">
                 <Edit3 className="text-accentBlue" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Real-Time Correction</h3>
-              <p className="text-slate-400">Instantly fix spelling, grammar, and punctuation mistakes as you type without breaking your flow.</p>
+              <h3 className="text-xl font-bold mb-3">On-Demand AI Analysis</h3>
+              <p className="text-slate-400">Fix spelling, grammar, and punctuation mistakes on demand with a single click, keeping you in full control of your writing.</p>
             </div>
 
             <div className="bg-card p-8 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors">
