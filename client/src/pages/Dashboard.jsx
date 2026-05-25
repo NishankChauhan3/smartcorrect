@@ -351,8 +351,8 @@ const Dashboard = () => {
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Readability</span><span className="font-bold">{metrics.readability.score}</span></div>
-                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-accentBlue" style={{width: `${metrics.readability.score}%`}}></div></div>
+                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Readability</span><span className="font-bold">{metrics.readability.readability}</span></div>
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-accentBlue" style={{width: `${metrics.readability.readability}%`}}></div></div>
                   </div>
                   <div>
                     <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Grammar</span><span className="font-bold">{metrics.readability.grammar}</span></div>
