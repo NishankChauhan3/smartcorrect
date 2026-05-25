@@ -146,7 +146,9 @@ io.on('connection', (socket) => {
   },
   "tones": {
     "formal": "The text rewritten strictly in a formal tone",
-    "friendly": "The text rewritten strictly in a friendly tone"
+    "friendly": "The text rewritten strictly in a friendly tone",
+    "professional": "The text rewritten strictly in a professional tone",
+    "academic": "The text rewritten strictly in an academic tone"
   }
 }
 If the text is short or incomplete, naturally expand it into a complete, well-formed sentence for the tones. Return ONLY the JSON object, with no markdown formatting.
@@ -195,6 +197,20 @@ Text: ${data.text}`;
                                 id: Date.now() + 3, type: 'friendly', original: data.text,
                                 suggestion: aiData.tones.friendly,
                                 message: 'Rewritten in a friendly tone by AI.'
+                            });
+                        }
+                        if (aiData.tones && aiData.tones.professional && aiData.tones.professional !== data.text) {
+                            suggestions.push({
+                                id: Date.now() + 4, type: 'professional', original: data.text,
+                                suggestion: aiData.tones.professional,
+                                message: 'Rewritten in a professional tone by AI.'
+                            });
+                        }
+                        if (aiData.tones && aiData.tones.academic && aiData.tones.academic !== data.text) {
+                            suggestions.push({
+                                id: Date.now() + 5, type: 'academic', original: data.text,
+                                suggestion: aiData.tones.academic,
+                                message: 'Rewritten in an academic tone by AI.'
                             });
                         }
                         break; // Success, exit retry loop
