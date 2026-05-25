@@ -42,7 +42,23 @@ router.get('/', authMiddleware, async (req, res) => {
                 improvementHistory: []
             };
         }
-        
+        const todayFull = new Date().toISOString().split('T')[0];
+        if (user.analytics.lastActiveDate !== todayFull) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayFull = yesterday.toISOString().split('T')[0];
+
+            if (user.analytics.lastActiveDate === yesterdayFull) {
+                user.analytics.streak = (user.analytics.streak || 0) + 1;
+            } else if (!user.analytics.lastActiveDate) {
+                user.analytics.streak = 1; // First ever login
+            } else {
+                user.analytics.streak = 1; // Streak broken
+            }
+            user.analytics.wordsTypedToday = 0;
+            user.analytics.lastActiveDate = todayFull;
+        }
+
         user.analytics.improvementHistory = syncImprovementHistory(user.analytics.improvementHistory);
         user.markModified('analytics');
         await user.save();
