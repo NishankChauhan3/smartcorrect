@@ -107,7 +107,8 @@ io.on('connection', (socket) => {
                         break; // Success, exit retry loop
                     } catch (geminiError) {
                         console.error("Gemini API Error in analyze_text:", geminiError.message || geminiError);
-                        const isRetryable = geminiError.status === 429 || geminiError.status === 503 || geminiError.message === 'TIMEOUT' || (geminiError.message && (geminiError.message.includes('429') || geminiError.message.includes('RESOURCE_EXHAUSTED')));
+                        const msg = (geminiError.message || geminiError || '').toString();
+                        const isRetryable = geminiError.status === 429 || geminiError.status === 503 || msg === 'TIMEOUT' || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
                         if (isRetryable) {
                             if (apiManager.keys.length > 1) {
                                 apiManager.rotateKey();
@@ -242,7 +243,8 @@ JSON Schema required:
                         break;
                     } catch (geminiError) {
                         console.error("Gemini API Error in analyze_document:", geminiError.message || geminiError);
-                        const isRetryable = geminiError.status === 429 || geminiError.status === 503 || geminiError.message === 'TIMEOUT' || (geminiError.message && geminiError.message.includes('429'));
+                        const msg = (geminiError.message || geminiError || '').toString();
+                        const isRetryable = geminiError.status === 429 || geminiError.status === 503 || msg === 'TIMEOUT' || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
                         if (isRetryable) {
                             if (apiManager.keys.length > 1) {
                                 apiManager.rotateKey();
