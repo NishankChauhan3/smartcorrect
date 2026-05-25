@@ -1,14 +1,15 @@
 # SmartCorrect ✨
 
-SmartCorrect is a full-stack AI-powered writing assistant and text transformation platform. Built with a modern React frontend and a robust Node.js backend, it leverages Google's Gemini AI to provide real-time autocorrection, text summarization, tone adjustments, and detailed productivity analytics.
+SmartCorrect is a full-stack AI-powered writing assistant and text transformation platform. Built with a modern React frontend and a robust Node.js backend, it leverages Google's Gemini AI to provide on-demand grammar correction, text formatting, tone adjustments, and detailed productivity analytics.
 
 ## 🚀 Features
 
-- **AI Text Transformation:** Instantly summarize, expand, or translate text using advanced AI models.
-- **Smart Autocorrect:** Real-time grammar and spelling corrections.
-- **User Authentication:** Secure JWT-based registration and login system.
-- **Analytics Dashboard:** Track your productivity, text processing history, and usage metrics over time.
-- **Modern UI/UX:** A responsive, beautiful interface styled with Tailwind CSS and Framer Motion.
+- **On-Demand AI Analysis:** Manually trigger comprehensive checks to fix spelling, grammar, and structure without disrupting your flow.
+- **Tone Converter:** Seamlessly rewrite sentences to sound Professional, Formal, Friendly, or Academic with one click.
+- **Real-Time Document Metrics:** Live tracking of Sentiment, Readability, Professionalism, and Clarity scores as you type.
+- **Advanced AI Tools:** Quickly Summarize, Expand, Translate (via MyMemory API), or convert text into Bullet points.
+- **Advanced Analytics Dashboard:** Visually track your daily goals, current streaks, total words typed, and writing improvement over time.
+- **Secure Authentication:** JWT-based registration and login system to persist your progress and analytics.
 
 ## 🛠️ Tech Stack
 
