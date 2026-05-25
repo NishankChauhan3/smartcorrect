@@ -84,7 +84,7 @@ io.on('connection', (socket) => {
             let suggestions = [];
             let usedAI = false;
 
-            if (apiManager.getCurrentKey() !== 'dummy_key') {
+            if (apiManager.getCurrentKey() !== 'dummy_key' && !data.auto) {
                 let retries = Math.max(apiManager.keys.length, 3);
                 while (retries > 0) {
                     try {

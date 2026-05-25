@@ -108,12 +108,16 @@ const Dashboard = () => {
       
       analyzeTimeoutRef.current = setTimeout(() => {
         if (text.length > 5) {
-          socket.emit('analyze_document', { text });
-          
-          // Auto-trigger grammar check on pause for real-time suggestions
+          // Send auto flag to force LanguageTool for real-time grammar (saves AI quota)
           setIsAnalyzing(true);
           setSuggestions(prev => prev.filter(s => s.type !== 'grammar' && s.type !== 'tone'));
-          socket.emit('analyze_text', { text, mode: 'grammar' });
+          socket.emit('analyze_text', { text, mode: 'grammar', auto: true });
+
+          // Only analyze document metrics every 5 seconds instead of 1.5s
+          if (!window.lastDocAnalysis || Date.now() - window.lastDocAnalysis > 5000) {
+              window.lastDocAnalysis = Date.now();
+              socket.emit('analyze_document', { text });
+          }
 
           const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
           const wordsAdded = Math.max(0, wordCount - prevWordCountRef.current);
