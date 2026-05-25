@@ -16,12 +16,14 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-const syncImprovementHistory = (history) => {
+const syncImprovementHistory = (history, clientDateStr) => {
     const newHistory = [];
+    const baseDate = clientDateStr ? new Date(clientDateStr + 'T12:00:00Z') : new Date();
     for (let i = 6; i >= 0; i--) {
-        const d = new Date();
+        const d = new Date(baseDate);
         d.setDate(d.getDate() - i);
-        const dayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
+        // Ensure we are getting the weekday of the constructed local date
+        const dayStr = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
         const oldEntry = history && history.find(h => h.date === dayStr);
         newHistory.push({ date: dayStr, score: oldEntry ? oldEntry.score : 0 });
     }
@@ -42,9 +44,10 @@ router.get('/', authMiddleware, async (req, res) => {
                 improvementHistory: []
             };
         }
-        const todayFull = new Date().toISOString().split('T')[0];
+        const clientDate = req.headers['x-local-date'];
+        const todayFull = clientDate || new Date().toISOString().split('T')[0];
         if (user.analytics.lastActiveDate !== todayFull) {
-            const yesterday = new Date();
+            const yesterday = new Date(todayFull + 'T12:00:00Z');
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayFull = yesterday.toISOString().split('T')[0];
 
@@ -59,7 +62,7 @@ router.get('/', authMiddleware, async (req, res) => {
             user.analytics.lastActiveDate = todayFull;
         }
 
-        user.analytics.improvementHistory = syncImprovementHistory(user.analytics.improvementHistory);
+        user.analytics.improvementHistory = syncImprovementHistory(user.analytics.improvementHistory, clientDate);
         user.markModified('analytics');
         await user.save();
         
@@ -91,9 +94,10 @@ router.post('/update', authMiddleware, async (req, res) => {
             user.analytics.dailyGoal = dailyGoal;
         }
 
-        const todayFull = new Date().toISOString().split('T')[0];
+        const clientDate = req.headers['x-local-date'];
+        const todayFull = clientDate || new Date().toISOString().split('T')[0];
         if (user.analytics.lastActiveDate !== todayFull) {
-            const yesterday = new Date();
+            const yesterday = new Date(todayFull + 'T12:00:00Z');
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayFull = yesterday.toISOString().split('T')[0];
 
@@ -122,9 +126,10 @@ router.post('/update', authMiddleware, async (req, res) => {
         }
 
         if (readabilityScore) {
-            user.analytics.improvementHistory = syncImprovementHistory(user.analytics.improvementHistory);
+            user.analytics.improvementHistory = syncImprovementHistory(user.analytics.improvementHistory, clientDate);
             
-            const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
+            const todayDateObj = clientDate ? new Date(clientDate + 'T12:00:00Z') : new Date();
+            const today = todayDateObj.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
             let history = user.analytics.improvementHistory;
             
             // Because we synced, the last element is always today
