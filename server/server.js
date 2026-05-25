@@ -91,7 +91,7 @@ const processAiQueue = () => {
     }
     
     isProcessingAi = true;
-    nextAvailableAiTime = now + 4100; // Strictly enforce 4.1s between requests
+    nextAvailableAiTime = now + 4500; // Strictly enforce 4.5s between requests (13.3 RPM) to safely clear 15 RPM sliding window
     
     const task = aiQueue.shift();
     task.execute().finally(() => {
