@@ -60,7 +60,7 @@ router.post('/update', authMiddleware, async (req, res) => {
             };
         }
 
-        const { wordsTyped, mistakeFixed, correctionType, readabilityScore, dailyGoal } = req.body;
+        const { wordsAdded, mistakeFixed, correctionType, readabilityScore, dailyGoal } = req.body;
 
         if (dailyGoal) {
             user.analytics.dailyGoal = dailyGoal;
@@ -81,9 +81,9 @@ router.post('/update', authMiddleware, async (req, res) => {
             user.analytics.lastActiveDate = todayFull;
         }
 
-        if (wordsTyped) {
-            user.analytics.totalWordsTyped = Math.max(user.analytics.totalWordsTyped, wordsTyped);
-            user.analytics.wordsTypedToday = Math.max(user.analytics.wordsTypedToday || 0, wordsTyped);
+        if (wordsAdded) {
+            user.analytics.totalWordsTyped = (user.analytics.totalWordsTyped || 0) + wordsAdded;
+            user.analytics.wordsTypedToday = (user.analytics.wordsTypedToday || 0) + wordsAdded;
         }
 
         if (mistakeFixed) {

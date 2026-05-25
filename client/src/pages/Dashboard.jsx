@@ -87,6 +87,7 @@ const Dashboard = () => {
   }, [navigate]);
 
   const analyzeTimeoutRef = useRef(null);
+  const prevWordCountRef = useRef(0);
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -115,8 +116,10 @@ const Dashboard = () => {
           socket.emit('analyze_text', { text, mode: 'grammar' });
 
           const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
-          if (wordCount > analytics.totalWordsTyped) {
-            updateAnalytics({ wordsTyped: wordCount });
+          const wordsAdded = Math.max(0, wordCount - prevWordCountRef.current);
+          prevWordCountRef.current = wordCount;
+          if (wordsAdded > 0) {
+            updateAnalytics({ wordsAdded });
           }
           if (metrics.readability.score > 0) {
              updateAnalytics({ readabilityScore: metrics.readability.score });
@@ -385,10 +388,11 @@ const Dashboard = () => {
         {/* Analytics View */}
         {activeTab === 'analytics' && (() => {
           let weeklyImprovement = "0%";
-          if (analytics.improvementHistory && analytics.improvementHistory.length >= 2) {
-            const first = analytics.improvementHistory[0].score;
-            const last = analytics.improvementHistory[analytics.improvementHistory.length - 1].score;
-            if (first > 0) {
+          if (analytics.improvementHistory) {
+            const validScores = analytics.improvementHistory.filter(h => h.score > 0);
+            if (validScores.length >= 2) {
+              const first = validScores[0].score;
+              const last = validScores[validScores.length - 1].score;
               const diff = last - first;
               weeklyImprovement = diff > 0 ? `+${diff}%` : `${diff}%`;
             }
